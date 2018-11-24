@@ -5,8 +5,8 @@ import math
 import nabla
 from nabla import grad, Dual
 
-def close(x, y):
-    return abs(x-y)<1e-12
+def close(x, y, eps=1e-12):
+    return abs(x-y)<eps
 
 def test_dual():
     x = Dual(2,3)
@@ -170,9 +170,42 @@ def test_grad_multivar():
     assert close(fgrad.dual[2], dfdx)
 
 def test_grad_multimulti():
-    pass
+
+    def func(x, y, z):
+        f0 = nabla.sqrt(x*nabla.exp(y) + nabla.cos(z))
+        f1 = x*y**2 + nabla.cos(z) + 5
+        f2 = (x + y*z)/nabla.sqrt(x + y) * 0.1
+        f3 = nabla.sin(nabla.cos(nabla.sqrt(x*y + z)))
+        return [f0, f1, f2, f3]
+
+    x, y, z = 1, 2, 3
+
+    # Numerical derivatives
+    eps = 1e-6
+    fpx = func(x+eps, y, z)
+    fpy = func(x, y+eps, z)
+    fpz = func(x, y, z+eps)
+    f = func(x, y, z)
+    
+    fx = []
+    fy = []
+    fz = []
+    for i in range(4):
+        fx.append( (fpx[i] - f[i])/eps )
+        fy.append( (fpy[i] - f[i])/eps )
+        fz.append( (fpz[i] - f[i])/eps )
+
+    fgrad = nabla.grad()(func)(x, y, z)
+    print(fgrad)
+
+    for i in range(4):
+        assert close(fx[i], fgrad[i].dual[0], 1e-5)
+        assert close(fy[i], fgrad[i].dual[1], 1e-5)
+        assert close(fz[i], fgrad[i].dual[2], 1e-5)
+
+
 
 
 if __name__=="__main__":
-    test_grad_multivar()
+    test_grad_multimulti()
 
