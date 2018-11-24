@@ -82,29 +82,51 @@ def grad(*args):
 # f(a + be) = f(a) + b fprime(a) e
 
 def exp(x):
-    expa = math.exp(x.real)
-    ret = Dual(expa, nvars=x.nvars)
-    for i in range(x.nvars):
-        ret.dual[i] = x.dual[i]*expa
-    return ret
+    if isinstance(x, Dual):
+        expa = math.exp(x.real)
+        ret = Dual(expa, nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i]*expa
+        return ret
+    else:
+        return math.exp(x)
 
 def log(x):
-    ret = Dual(math.log(x.real), nvars=x.nvars)
-    for i in range(x.nvars):
-        ret.dual[i] = x.dual[i] / x.real
-    return ret
+    if isinstance(x, Dual):
+        ret = Dual(math.log(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] / x.real
+        return ret
+    else:
+        return math.log(x)
 
 def sin(x):
-    ret = Dual(math.sin(x.real), nvars=x.nvars)
-    for i in range(x.nvars):
-        ret.dual[i] = x.dual[i] * math.cos(x.real)
-    return ret
+    if isinstance(x, Dual):
+        ret = Dual(math.sin(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] * math.cos(x.real)
+        return ret
+    else:
+        return math.sin(x)
 
 def cos(x):
-    ret = Dual(math.cos(x.real), nvars=x.nvars)
-    for i in range(x.nvars):
-        ret.dual[i] = -x.dual[i] * math.sin(x.real)
-    return ret
+    if isinstance(x, Dual):
+        ret = Dual(math.cos(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = -x.dual[i] * math.sin(x.real)
+        return ret
+    else:
+        return math.cos(x)
+
+def sqrt(x):
+    if isinstance(x, Dual):
+        sqrta = math.sqrt(x.real)
+        ret = Dual(sqrta, nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] * 0.5/sqrta
+        return ret
+    else:
+        return math.sqrt(x)
 
 class Dual:
     def __init__(self, real=0, dual=None, nvars=None):
