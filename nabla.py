@@ -55,38 +55,40 @@ def grad(*args):
 
 @argstodual(0)
 def exp(x):
-    expa = math.exp(x.a)
-    return Dual(expa, x.b*expa)
+    expa = math.exp(x.real)
+    return Dual(expa, x.dual*expa)
 
 @argstodual(0)
 def log(x):
-    return Dual(math.log(x.a), x.b / x.a)
+    return Dual(math.log(x.real), x.dual / x.real)
 
 @argstodual(0)
 def sin(x):
-    return Dual(math.sin(x.a), x.b * math.cos(x.a))
+    return Dual(math.sin(x.real), x.dual * math.cos(x.real))
 
 @argstodual(0)
 def cos(x):
-    return Dual(math.cos(x.a), -x.b * math.sin(x.a))
+    return Dual(math.cos(x.real), -x.dual * math.sin(x.real))
 
 class Dual:
     # TODO multiple variables
-    def __init__(self, a=0, b=0):
-        self.a = a
-        self.b = b
+    def __init__(self, real=0, dual=0, nvars=1):
+        #assert len(dual)==nvars
+        self.nvars = nvars
+        self.real = real
+        self.dual = dual
     @argstodual(0)
     def __add__(self, other):
-        return Dual(self.a + other.a, self.b + other.b)
+        return Dual(self.real + other.real, self.dual + other.dual)
     @argstodual(0)
     def __sub__(self, other):
-        return Dual(self.a - other.a, self.b - other.b)
+        return Dual(self.real - other.real, self.dual - other.dual)
     @argstodual(0)
     def __mul__(self, other):
-        return Dual(self.a*other.a, self.a*other.b + self.b*other.a)
+        return Dual(self.real*other.real, self.real*other.dual + self.dual*other.real)
     @argstodual(0)
     def __truediv__(self, other):
-        return Dual(self.a/other.a, (self.b*other.a - self.a*other.b)/(other.a*other.a))
+        return Dual(self.real/other.real, (self.dual*other.real - self.real*other.dual)/(other.real*other.real))
     # object.__floordiv__(self, other)
     # object.__mod__(self, other)
     # object.__divmod__(self, other)
@@ -149,19 +151,19 @@ class Dual:
 
     @argstodual(0)
     def __lt__(self, other):
-        return self.a < other.a
+        return self.real < other.real
     @argstodual(0)
     def __le__(self, other):
-        return self.a <= other.a
+        return self.real <= other.real
     @argstodual(0)
     def __gt__(self, other):
-        return self.a > other.a
+        return self.real > other.real
     @argstodual(0)
     def __ge__(self, other):
-        return self.a >= other.a
+        return self.real >= other.real
 
     def __str__(self):
-        return "Dual({},  {})".format(self.a, self.b)
+        return "Dual({},  {})".format(self.real, self.dual)
     def __repr__(self):
-        return "Dual({},  {})".format(self.a, self.b)
+        return "Dual({},  {})".format(self.real, self.dual)
 
