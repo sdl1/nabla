@@ -45,6 +45,10 @@ def test_dual():
     z = x / y
     assert z.real==0.5 and z.dual[0]==(0*4 - 2*5)/4**2
 
+    sqrty = nabla.sqrt(y)
+    ytohalf = y ** 0.5
+    assert close(sqrty.real, ytohalf.real) and close(sqrty.dual[0], ytohalf.dual[0])
+
 def test_dual_multivar():
     x = Dual(2, [3, 1])
     y = Dual(4, [5, 2])

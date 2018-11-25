@@ -172,12 +172,23 @@ class Dual:
     # object.__floordiv__(self, other)
     # object.__mod__(self, other)
     # object.__divmod__(self, other)
-    @othertodual(0)
     def __pow__(self, other, *modulo):
         if modulo:
             return NotImplemented
         else:
-            return exp(other*log(self))
+            if isinstance(other, int):
+                m = other
+                negative = (m<0)
+                m = abs(m)
+                ret = Dual(1, nvars=self.nvars)
+                for _ in range(m):
+                    ret *= self
+                if negative:
+                    ret = 1/ret
+                return ret
+            else:
+                other = Dual(real=other, nvars=self.nvars)
+                return exp(other*log(self))
     # object.__lshift__(self, other)
     # object.__rshift__(self, other)
     # object.__and__(self, other)
@@ -199,12 +210,8 @@ class Dual:
     # object.__rfloordiv__(self, other)
     # object.__rmod__(self, other)
     # object.__rdivmod__(self, other)
-    @othertodual(0)
     def __rpow__(self, other, *modulo):
-        if modulo:
-            return NotImplemented
-        else:
-            return exp(self*log(other))
+        return other.__pow__(self, modulo)
     # object.__rlshift__(self, other)
     # object.__rrshift__(self, other)
     # object.__rand__(self, other)
