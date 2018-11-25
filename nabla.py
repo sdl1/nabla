@@ -255,3 +255,27 @@ class Dual:
     def __repr__(self):
         return self.__str__()
 
+def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None):
+    fgrad = grad(variables)(f)
+    x0 = np.array(x0)
+    zerostep = np.zeros(x0.shape)
+    tolerance_sq = tolerance**2
+    converged = False
+    for it in range(maxits):
+        gradient = fgrad(*x0).dual
+        if variables==None:
+            step = alpha*gradient
+        else:
+            # Only step in specified variables
+            step = zerostep
+            step[variables] = alpha*gradient
+        x0 = x0 - step
+        if np.dot(step, step)<tolerance_sq:
+            converged = True
+            break
+    if not converged:
+        print("Warning: didn't converge in {} iterations".format(maxits))
+    result = fgrad(*x0)
+    return x0, result.real, result.dual
+
+
