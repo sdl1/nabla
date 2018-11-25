@@ -54,11 +54,11 @@ def grad(*args):
                 for key in kwargs:
                     if isinstance(kwargs[key], Dual):
                         kwargs[key].dual[i] = 1
-
+                        i += 1
             else:
                 nvars = len(varpos)
                 if kwargs:
-                    raise Exception("Keyword arguments not supported.")
+                    raise Exception("Keyword arguments only supported for full gradient.")
                 newargs = [Dual(arg, nvars=nvars) if isinstance(arg, numbers.Number) else arg for arg in args]
                 # Replace the chosen vars in varpos with dual[i]=1
                 for i in range(nvars):

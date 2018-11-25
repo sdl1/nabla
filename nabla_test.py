@@ -104,6 +104,17 @@ def test_gradsimple():
     z = sq(x=3)
     assert z.real==9 and z.dual[0]==6
 
+    # non-numeric args
+    def fn(x, y):
+        print(y)
+        return 2*x**3
+
+    fgrad = nabla.grad()(fn)(2, y="non-numeric")
+    assert close(fgrad.real, 16) and fgrad.nvars==1 and close(fgrad.dual[0], 24)
+
+    fgrad = nabla.grad()(fn)(y="non-numeric", x=2)
+    assert close(fgrad.real, 16) and fgrad.nvars==1 and close(fgrad.dual[0], 24)
+
     # Transcendental functions
     x = Dual(5,1)
     z = nabla.sin(x)
@@ -168,6 +179,16 @@ def test_grad_multivar():
     assert close(fgrad.dual[0], dfdz)
     assert close(fgrad.dual[1], dfdy)
     assert close(fgrad.dual[2], dfdx)
+
+    # Non-numeric and kwargs
+    def func(x, y, z, w):
+        print(x)
+        return y + z + w
+    x, y, z, w = "non-numeric", 1, 2, 3
+    fgrad = nabla.grad()(func)(x, y, z, w)
+    assert fgrad.real==6 and fgrad.dual[0]==1 and fgrad.dual[1]==1 and fgrad.dual[2]==1
+    fgrad = nabla.grad()(func)(x=x, y=y, z=z, w=w)
+    assert fgrad.real==6 and fgrad.dual[0]==1 and fgrad.dual[1]==1 and fgrad.dual[2]==1
 
 def test_grad_multimulti():
 
