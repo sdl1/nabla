@@ -1,6 +1,7 @@
 import functools
 import numbers
 import math
+import numpy as np
 
 #def argstodual(e):
 #    def decorator(func):
@@ -132,18 +133,18 @@ class Dual:
     def __init__(self, real=0, dual=None, nvars=None):
         self.real = real
         if isinstance(dual, numbers.Number):
-            dual = [dual]
+            dual = np.array([dual], dtype=np.float64)
         if dual==None and nvars==None:
-            self.dual = [0]
+            self.dual = np.array([0], dtype=np.float64)
             self.nvars = 1
         elif nvars==None:
-            self.dual = dual
+            self.dual = np.array(dual, dtype=np.float64)
             self.nvars = len(dual)
         elif dual==None:
-            self.dual = [0]*nvars
+            self.dual = np.array([0]*nvars, dtype=np.float64)
             self.nvars = nvars
         else:
-            self.dual = dual
+            self.dual = np.array(dual, dtype=np.float64)
             self.nvars = nvars
     @othertodual(0)
     def __add__(self, other):
