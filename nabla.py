@@ -1,6 +1,5 @@
 import functools
 import numbers
-import math
 import numpy as np
 
 #def argstodual(e):
@@ -39,31 +38,39 @@ def grad(*args):
             if varpos is None:
                 # Full gradient case
                 # Count numerical arguments
-                nvars = len([a for a in args if isinstance(a, numbers.Number)])
-                nvars += len([key for key in kwargs if isinstance(kwargs[key], numbers.Number)])
-                #dual = [1]*nvars
-                args = [Dual(arg, nvars=nvars) if isinstance(arg, numbers.Number) else arg for arg in args]
+                nvars = len([a for a in args if isinstance(a, numbers.Number) or isinstance(a, np.ndarray)])
+                nvars += len([key for key in kwargs if isinstance(kwargs[key], numbers.Number) or isinstance(kwargs[key], np.ndarray)])
+                newargs = [arg for arg in args]
+                i=0
+                for k,arg in enumerate(args):
+                    if isinstance(arg, numbers.Number):
+                        newargs[k] = Dual(arg, nvars=nvars, seedvar=i)
+                        i += 1
+                    elif isinstance(arg, np.ndarray):
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        newargs[k] = numpytodual(arg)
+                        i += 1
                 for key in kwargs:
                     if isinstance(kwargs[key], numbers.Number):
-                        kwargs[key] = Dual(kwargs[key], nvars=nvars)
-                # Now set dual[i]=1 in argument[i]
-                i=0
-                for arg in args:
-                    if isinstance(arg, Dual):
-                        arg.dual[i] = 1
+                        kwargs[key] = Dual(kwargs[key], nvars=nvars, seedvar=i)
                         i += 1
-                for key in kwargs:
-                    if isinstance(kwargs[key], Dual):
-                        kwargs[key].dual[i] = 1
+                    elif isinstance(kwargs[key], np.ndarray):
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        kwargs[key] = numpytodual(kwargs[key])
                         i += 1
+                args = newargs
             else:
                 nvars = len(varpos)
                 if kwargs:
                     raise Exception("Keyword arguments only supported for full gradient.")
-                newargs = [Dual(arg, nvars=nvars) if isinstance(arg, numbers.Number) else arg for arg in args]
+                newargs = [arg for arg in args]
                 # Replace the chosen vars in varpos with dual[i]=1
                 for i in range(nvars):
-                    newargs[varpos[i]].dual[i] = 1
+                    if isinstance(args[varpos[i]], np.ndarray):
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        newargs[varpos[i]] = numpytodual(args[varpos[i]])
+                    else:
+                        newargs[varpos[i]] = Dual(args[varpos[i]], nvars=nvars, seedvar=i)
                 args = newargs
             return func(*args, **kwargs)
         return wrapper
@@ -80,54 +87,6 @@ def grad(*args):
             varpos = [varpos]
     return decorator
 
-# f(a + be) = f(a) + b fprime(a) e
-
-def exp(x):
-    if isinstance(x, Dual):
-        expa = math.exp(x.real)
-        ret = Dual(expa, nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i]*expa
-        return ret
-    else:
-        return math.exp(x)
-
-def log(x):
-    if isinstance(x, Dual):
-        ret = Dual(math.log(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] / x.real
-        return ret
-    else:
-        return math.log(x)
-
-def sin(x):
-    if isinstance(x, Dual):
-        ret = Dual(math.sin(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] * math.cos(x.real)
-        return ret
-    else:
-        return math.sin(x)
-
-def cos(x):
-    if isinstance(x, Dual):
-        ret = Dual(math.cos(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = -x.dual[i] * math.sin(x.real)
-        return ret
-    else:
-        return math.cos(x)
-
-def sqrt(x):
-    if isinstance(x, Dual):
-        sqrta = math.sqrt(x.real)
-        ret = Dual(sqrta, nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] * 0.5/sqrta
-        return ret
-    else:
-        return math.sqrt(x)
 
 def dot(x, y):
     ret = Dual(0.0)
@@ -136,7 +95,7 @@ def dot(x, y):
     return ret
 
 class Dual:
-    def __init__(self, real=0, dual=None, nvars=None):
+    def __init__(self, real=0, dual=None, nvars=None, seedvar=None):
         self.real = real
         if dual is None and nvars is None:
             self.dual = np.zeros(1)
@@ -150,6 +109,8 @@ class Dual:
         else:
             self.dual = np.array(dual, dtype=np.float64, ndmin=1)
             self.nvars = nvars
+        if seedvar is not None:
+            self.dual[seedvar] = 1
     def __add__(self, other):
         otherreal = getattr(other, 'real', other)
         otherdual = getattr(other, 'dual', None)
@@ -202,7 +163,7 @@ class Dual:
                 ret = 1/ret
             return ret
         else:
-            return exp(other*log(self))
+            return Dual.exp(other*Dual.log(self))
     # object.__lshift__(self, other)
     # object.__rshift__(self, other)
     # object.__and__(self, other)
@@ -267,6 +228,40 @@ class Dual:
         return "Dual({},  {})".format(self.real, self.dual)
     def __repr__(self):
         return self.__str__()
+
+    # f(a + be) = f(a) + b fprime(a) e
+
+    def exp(x):
+        expa = np.exp(x.real)
+        ret = Dual(expa, nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i]*expa
+        return ret
+    
+    def log(x):
+        ret = Dual(np.log(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] / x.real
+        return ret
+    
+    def sin(x):
+        ret = Dual(np.sin(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] * np.cos(x.real)
+        return ret
+    
+    def cos(x):
+        ret = Dual(np.cos(x.real), nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = -x.dual[i] * np.sin(x.real)
+        return ret
+    
+    def sqrt(x):
+        sqrta = np.sqrt(x.real)
+        ret = Dual(sqrta, nvars=x.nvars)
+        for i in range(x.nvars):
+            ret.dual[i] = x.dual[i] * 0.5/sqrta
+        return ret
 
 def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None):
     fgrad = grad(variables)(f)

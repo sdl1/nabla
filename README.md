@@ -46,11 +46,11 @@ print(grad([1,0])(f)(x, y, param, z))
     Dual(85,  [2. 4.])
 
 
-Use decorators:
+Use decorators; interop with numpy:
 
 
 ```python
-from nabla import sin, cos
+from numpy import sin, cos
 
 @grad
 def f(x, y):
@@ -94,17 +94,16 @@ print("Function, gradient at minimum = {}, {}\n".format(fval, gradient))
 
 
 ```python
-from nabla import sin, sqrt
 import numpy as np
 import matplotlib.pyplot as plt
 %matplotlib inline
 
 def f(x):
-    return sqrt(3*x + sin(x)**2)/(4*x**3 + 2*x + 1)
+    return np.sqrt(3*x + np.sin(x)**2)/(4*x**3 + 2*x + 1)
 
 def analytical_derivative(x):
-    A = (2*sin(x)*cos(x)+3)/(2*(4*x**3 + 2*x + 1)*sqrt(3*x + sin(x)**2))
-    B = (12*x**2 + 2)*sqrt(3*x + sin(x)**2) / (4*x**3 + 2*x + 1)**2
+    A = (2*np.sin(x)*np.cos(x)+3)/(2*(4*x**3 + 2*x + 1)*np.sqrt(3*x + np.sin(x)**2))
+    B = (12*x**2 + 2)*np.sqrt(3*x + np.sin(x)**2) / (4*x**3 + 2*x + 1)**2
     return A - B
 
 x = 1
@@ -130,7 +129,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f07efed3630>
+    <matplotlib.legend.Legend at 0x7f6978a9f630>
 
 
 
@@ -145,7 +144,3 @@ Compare time taken:
 %timeit -n10000 grad(f)(x)
 %timeit -n10000 (f(x+1e-8) - f(x))/1e-8
 ```
-
-    96.9 µs ± 4.7 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
-    3.01 µs ± 33.5 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
-

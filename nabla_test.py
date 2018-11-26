@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import math
 import numpy as np
 
 import nabla
@@ -52,7 +51,7 @@ def test_dual():
     z = x / y
     assert z.real==0.5 and z.dual[0]==(0*4 - 2*5)/4**2
 
-    sqrty = nabla.sqrt(y)
+    sqrty = np.sqrt(y)
     ytohalf = y ** 0.5
     assert close(sqrty.real, ytohalf.real) and close(sqrty.dual[0], ytohalf.dual[0])
 
@@ -127,6 +126,27 @@ def test_gradsimple():
     z = plusthree(3)
     assert z.real==6 and z.dual[0]==1
 
+    def f(x):
+        return x*x
+
+    w = grad(0)(f)(np.array([1,2,3]))
+    assert dualclose(w[0], Dual(1, 2))
+    assert dualclose(w[1], Dual(4, 4))
+    assert dualclose(w[2], Dual(9, 6))
+
+    w = grad(f)(np.array([1,2,3]))
+    assert dualclose(w[0], Dual(1, 2))
+    assert dualclose(w[1], Dual(4, 4))
+    assert dualclose(w[2], Dual(9, 6))
+
+    # Element-wide mult of np arrays
+    A = np.array([[1,2], [3,4]])
+    w = grad(f)(A)
+    assert dualclose(w[0,0], Dual(1, 2))
+    assert dualclose(w[0,1], Dual(4, 4))
+    assert dualclose(w[1,0], Dual(9, 6))
+    assert dualclose(w[1,1], Dual(16, 8))
+
     # kwargs
     z = sq(x=3)
     assert z.real==9 and z.dual[0]==6
@@ -144,34 +164,34 @@ def test_gradsimple():
 
     # Transcendental functions
     x = Dual(5,1)
-    z = nabla.sin(x)
-    assert close(z.real, math.sin(5)) and close(z.dual[0], math.cos(5))
-    z = nabla.cos(x)
-    assert close(z.real, math.cos(5)) and close(z.dual[0], -math.sin(5))
-    z = nabla.exp(x)
-    assert close(z.real, math.exp(5)) and close(z.dual[0], math.exp(5))
-    z = nabla.log(x)
-    assert close(z.real, math.log(5)) and close(z.dual[0], 1/5)
+    z = np.sin(x)
+    assert close(z.real, np.sin(5)) and close(z.dual[0], np.cos(5))
+    z = np.cos(x)
+    assert close(z.real, np.cos(5)) and close(z.dual[0], -np.sin(5))
+    z = np.exp(x)
+    assert close(z.real, np.exp(5)) and close(z.dual[0], np.exp(5))
+    z = np.log(x)
+    assert close(z.real, np.log(5)) and close(z.dual[0], 1/5)
     
 def test_grad_multivar():
     def func(x, y, z):
-        return 2*x*y**2*nabla.cos(z)
+        return 2*x*y**2*np.cos(z)
 
     @grad(1)
     def funcgrad(x, y, z):
-        return 2*x*y**2*nabla.cos(z)
+        return 2*x*y**2*np.cos(z)
 
     @grad
     def funcfullgrad(x, y, z):
-        return 2*x*y**2*nabla.cos(z)
+        return 2*x*y**2*np.cos(z)
 
     x = 2
     y = 3
     z = 4
-    f = 2*x*y**2*math.cos(z)
-    dfdx = 2*y**2*math.cos(z)
-    dfdy = 4*x*y*math.cos(z)
-    dfdz = -2*x*y**2*math.sin(z)
+    f = 2*x*y**2*np.cos(z)
+    dfdx = 2*y**2*np.cos(z)
+    dfdy = 4*x*y*np.cos(z)
+    dfdz = -2*x*y**2*np.sin(z)
 
     w = funcgrad(x,y,z)
     assert close(w.real, f) and close(w.dual[0], dfdy)
@@ -217,13 +237,23 @@ def test_grad_multivar():
     fgrad = nabla.grad()(func)(x=x, y=y, z=z, w=w)
     assert fgrad.real==6 and fgrad.dual[0]==1 and fgrad.dual[1]==1 and fgrad.dual[2]==1
 
+    def f(x, y, param, z):
+        return 2*x*y + z**4
+
+    x, y, z, param = 1, 2, 3, "this is a non-numeric parameter"
+
+    w = grad(f)(x, y, param, z)
+    assert dualclose(w, Dual(85, [4, 2, 108]))
+    w = grad([1,0])(f)(x, y, param, z)
+    assert dualclose(w, Dual(85, [2, 4]))
+
 def test_grad_multimulti():
 
     def func(x, y, z):
-        f0 = nabla.sqrt(x*nabla.exp(y) + nabla.cos(z))
-        f1 = x*y**2 + nabla.cos(z) + 5
-        f2 = (x + y*z)/nabla.sqrt(x + y) * 0.1
-        f3 = nabla.sin(nabla.cos(nabla.sqrt(x*y + z)))
+        f0 = np.sqrt(x*np.exp(y) + np.cos(z))
+        f1 = x*y**2 + np.cos(z) + 5
+        f2 = (x + y*z)/np.sqrt(x + y) * 0.1
+        f3 = np.sin(np.cos(np.sqrt(x*y + z)))
         return [f0, f1, f2, f3]
 
     x, y, z = 1, 2, 3
@@ -255,5 +285,5 @@ def test_grad_multimulti():
 
 
 if __name__=="__main__":
-    test_grad_multimulti()
+    test_gradsimple()
 
