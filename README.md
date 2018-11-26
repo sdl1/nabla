@@ -130,7 +130,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f06c41d7630>
+    <matplotlib.legend.Legend at 0x7f6dd2192630>
 
 
 
@@ -146,6 +146,6 @@ Compare time taken:
 %timeit -n10000 (f(x+1e-8) - f(x))/1e-8
 ```
 
-    121 µs ± 8.45 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
-    2.97 µs ± 27 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+    113 µs ± 5.98 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+    2.91 µs ± 19.2 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
 

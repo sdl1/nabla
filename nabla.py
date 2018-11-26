@@ -133,13 +133,13 @@ class Dual:
     def __init__(self, real=0, dual=None, nvars=None):
         self.real = real
         if dual is None and nvars is None:
-            self.dual = np.array([0.0], dtype=np.float64)
+            self.dual = np.zeros(1)
             self.nvars = 1
         elif nvars is None:
             self.dual = np.array(dual, dtype=np.float64, ndmin=1)
             self.nvars = len(self.dual)
         elif dual is None:
-            self.dual = np.array([0.0]*nvars, dtype=np.float64)
+            self.dual = np.zeros(nvars)
             self.nvars = nvars
         else:
             self.dual = np.array(dual, dtype=np.float64, ndmin=1)
