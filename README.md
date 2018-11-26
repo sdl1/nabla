@@ -144,3 +144,7 @@ Compare time taken:
 %timeit -n10000 grad(f)(x)
 %timeit -n10000 (f(x+1e-8) - f(x))/1e-8
 ```
+
+    116 µs ± 6.09 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+    7.83 µs ± 141 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
