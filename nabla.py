@@ -141,35 +141,28 @@ class Dual:
         otherdual = getattr(other, 'dual', None)
         ret = Dual(self.real + otherreal, self.dual)
         if otherdual is not None:
-            for i in range(self.nvars):
-                ret.dual[i] += otherdual[i]
+            ret.dual += otherdual
         return ret
     def __sub__(self, other):
         otherreal = getattr(other, 'real', other)
         otherdual = getattr(other, 'dual', None)
         ret = Dual(self. real - otherreal, self.dual)
         if otherdual is not None:
-            for i in range(self.nvars):
-                ret.dual[i] -= otherdual[i]
+            ret.dual -= otherdual
         return ret
     def __mul__(self, other):
         otherreal = getattr(other, 'real', other)
         otherdual = getattr(other, 'dual', None)
-        ret = Dual(self.real * otherreal, nvars=self.nvars)
-        for i in range(self.nvars):
-            ret.dual[i] = self.dual[i]*otherreal
+        ret = Dual(self.real * otherreal, self.dual * otherreal)
         if otherdual is not None:
-            for i in range(self.nvars):
-                ret.dual[i] += self.real*otherdual[i]
+            ret.dual += self.real*otherdual
         return ret
     def __truediv__(self, other):
         otherreal = getattr(other, 'real', other)
         otherdual = getattr(other, 'dual', None)
-        #ret.dual[i] = self.dual[i]/other.real - self.real*other.dual[i])/(other.real*other.real)
         ret = Dual(self. real / otherreal, self.dual / otherreal)
         if otherdual is not None:
-            for i in range(self.nvars):
-                ret.dual[i] -= self.real*otherdual[i]/(otherreal*otherreal)
+            ret.dual -= self.real*otherdual/(otherreal*otherreal)
         return ret
     # object.__floordiv__(self, other)
     # object.__mod__(self, other)
@@ -217,8 +210,20 @@ class Dual:
     # object.__rxor__(self, other)
     # object.__ror__(self, other)
 
-    # object.__iadd__(self, other)
-    # object.__isub__(self, other)
+    def __iadd__(self, other):
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        self.real += otherreal
+        if otherdual is not None:
+            self.dual += other.dual
+        return self
+    def __isub__(self, other):
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        self.real -= otherreal
+        if otherdual is not None:
+            self.dual -= other.dual
+        return self
     # object.__imul__(self, other)
     # object.__itruediv__(self, other)
     # object.__ifloordiv__(self, other)
@@ -258,44 +263,35 @@ class Dual:
 
     def exp(x):
         expa = np.exp(x.real)
-        ret = Dual(expa, nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i]*expa
+        ret = Dual(expa, x.dual*expa)
         return ret
     
     def log(x):
-        ret = Dual(np.log(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] / x.real
+        ret = Dual(np.log(x.real), x.dual / x.real)
         return ret
     
     def sin(x):
-        ret = Dual(np.sin(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] * np.cos(x.real)
+        ret = Dual(np.sin(x.real), x.dual * np.cos(x.real))
         return ret
     
     def cos(x):
-        ret = Dual(np.cos(x.real), nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = -x.dual[i] * np.sin(x.real)
+        ret = Dual(np.cos(x.real), -x.dual * np.sin(x.real))
         return ret
     
     def sqrt(x):
         sqrta = np.sqrt(x.real)
-        ret = Dual(sqrta, nvars=x.nvars)
-        for i in range(x.nvars):
-            ret.dual[i] = x.dual[i] * 0.5/sqrta
+        ret = Dual(sqrta, x.dual * 0.5/sqrta)
         return ret
 
-def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None):
+def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None, verbose=False):
     fgrad = grad(variables)(f)
     x0 = np.array(x0)
-    zerostep = np.zeros(x0.shape)
+    zerostep = 0.0*x0 # Maintain shape of each element of x0
     tolerance_sq = tolerance**2
     converged = False
     for it in range(maxits):
-        gradient = fgrad(*x0).dual
+        func = fgrad(*x0)
+        gradient = func.dual
         if variables is None:
             step = alpha*gradient
         else:
@@ -303,9 +299,13 @@ def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None)
             step = zerostep
             step[variables] = alpha*gradient
         x0 = x0 - step
-        if np.dot(step, step)<tolerance_sq:
+        stepsizesq = np.dot(gradient, gradient)
+        #print(gradient)
+        if stepsizesq<tolerance_sq:
             converged = True
             break
+        if verbose and it%5==0:
+            print("Iter {}: fval = {}".format(it, func.real))
     if not converged:
         print("Warning: didn't converge in {} iterations".format(maxits))
     result = fgrad(*x0)
