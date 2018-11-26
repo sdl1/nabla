@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 
 import math
+import numpy as np
 
 import nabla
 from nabla import grad, Dual
 
 def close(x, y, eps=1e-12):
     return abs(x-y)<eps
+
+def dualclose(x, y, eps=1e-12):
+    isclose = close(x.real, y.real, eps)
+    for i in range(x.nvars):
+        isclose = isclose and close(x.dual[i], y.dual[i], eps)
+    return isclose
 
 def test_dual():
     x = Dual(2,3)
@@ -52,6 +59,18 @@ def test_dual():
     z = 2**y
     zalt = Dual(2)**y
     assert close(z.real, zalt.real) and close(z.dual[0], zalt.dual[0])
+
+    x = Dual(2,3)
+    y = Dual(4,5)
+    w = x*y
+    z = nabla.dot([x], [y])
+    assert dualclose(z, w)
+    z = nabla.dot(np.array([x]), np.array([y]))
+    assert dualclose(z, w)
+    z = nabla.dot(np.array([x, y]), np.array([x, x]))
+    assert dualclose(z, x*x + y*x)
+    z = nabla.dot(np.array([x, 3]), np.array([x, x]))
+    assert dualclose(z, x*x + 3*x)
 
 def test_dual_multivar():
     x = Dual(2, [3, 1])

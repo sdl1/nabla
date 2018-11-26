@@ -129,6 +129,12 @@ def sqrt(x):
     else:
         return math.sqrt(x)
 
+def dot(x, y):
+    ret = Dual(0.0)
+    for i in range(len(x)):
+        ret += x[i]*y[i]
+    return ret
+
 class Dual:
     def __init__(self, real=0, dual=None, nvars=None):
         self.real = real
