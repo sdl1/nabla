@@ -130,22 +130,30 @@ def test_gradsimple():
         return x*x
 
     w = grad(0)(f)(np.array([1,2,3]))
-    assert dualclose(w[0], Dual(1, 2))
-    assert dualclose(w[1], Dual(4, 4))
-    assert dualclose(w[2], Dual(9, 6))
+    assert dualclose(w[0], Dual(1, [2, 0, 0]))
+    assert dualclose(w[1], Dual(4, [0, 4, 0]))
+    assert dualclose(w[2], Dual(9, [0, 0, 6]))
 
     w = grad(f)(np.array([1,2,3]))
-    assert dualclose(w[0], Dual(1, 2))
-    assert dualclose(w[1], Dual(4, 4))
-    assert dualclose(w[2], Dual(9, 6))
+    assert dualclose(w[0], Dual(1, [2, 0, 0]))
+    assert dualclose(w[1], Dual(4, [0, 4, 0]))
+    assert dualclose(w[2], Dual(9, [0, 0, 6]))
 
     # Element-wide mult of np arrays
     A = np.array([[1,2], [3,4]])
     w = grad(f)(A)
-    assert dualclose(w[0,0], Dual(1, 2))
-    assert dualclose(w[0,1], Dual(4, 4))
-    assert dualclose(w[1,0], Dual(9, 6))
-    assert dualclose(w[1,1], Dual(16, 8))
+    assert dualclose(w[0,0], Dual(1, [2, 0, 0, 0]))
+    assert dualclose(w[0,1], Dual(4, [0, 4, 0, 0]))
+    assert dualclose(w[1,0], Dual(9, [0, 0, 6, 0]))
+    assert dualclose(w[1,1], Dual(16, [0, 0, 0, 8]))
+
+    # Reduction
+    def f(x):
+        return np.sum(x*x)
+    w = grad(f)(np.array([1,2,3]))
+    assert dualclose(w, Dual(14, [2, 4, 6]))
+    w = grad(0)(f)(np.array([1,2,3]))
+    assert dualclose(w, Dual(14, [2, 4, 6]))
 
     # kwargs
     z = sq(x=3)
@@ -246,6 +254,16 @@ def test_grad_multivar():
     assert dualclose(w, Dual(85, [4, 2, 108]))
     w = grad([1,0])(f)(x, y, param, z)
     assert dualclose(w, Dual(85, [2, 4]))
+
+    # Reduction
+    def f(x, y):
+        return np.sum(x*x) + np.sum(y*y)
+
+    x, y = np.array([1,2,3]), np.array([4,5])
+    w = grad(f)(x, y)
+    assert dualclose(w, Dual(14+16+25, [2, 4, 6, 8, 10]))
+    w = grad(1)(f)(x, y)
+    assert dualclose(w, Dual(14+16+25, [8, 10]))
 
 def test_grad_multimulti():
 

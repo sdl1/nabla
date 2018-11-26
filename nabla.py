@@ -38,8 +38,11 @@ def grad(*args):
             if varpos is None:
                 # Full gradient case
                 # Count numerical arguments
-                nvars = len([a for a in args if isinstance(a, numbers.Number) or isinstance(a, np.ndarray)])
-                nvars += len([key for key in kwargs if isinstance(kwargs[key], numbers.Number) or isinstance(kwargs[key], np.ndarray)])
+                nvars = len([a for a in args if isinstance(a, numbers.Number)])
+                nvars += len([key for key in kwargs if isinstance(kwargs[key], numbers.Number)])
+                # Count numpy args
+                nvars += sum([a.size for a in args if isinstance(a, np.ndarray)])
+                nvars += sum([kwargs[key].size for key in kwargs if isinstance(kwargs[key], np.ndarray)])
                 newargs = [arg for arg in args]
                 i=0
                 for k,arg in enumerate(args):
@@ -47,30 +50,52 @@ def grad(*args):
                         newargs[k] = Dual(arg, nvars=nvars, seedvar=i)
                         i += 1
                     elif isinstance(arg, np.ndarray):
-                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        # Each element is its own variable
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars))
                         newargs[k] = numpytodual(arg)
-                        i += 1
+                        flat_iter = newargs[k].flat
+                        for elt in range(newargs[k].size):
+                            flat_iter[elt].dual[i] = 1
+                            i += 1
                 for key in kwargs:
                     if isinstance(kwargs[key], numbers.Number):
                         kwargs[key] = Dual(kwargs[key], nvars=nvars, seedvar=i)
                         i += 1
                     elif isinstance(kwargs[key], np.ndarray):
-                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars))
                         kwargs[key] = numpytodual(kwargs[key])
-                        i += 1
+                        flat_iter = kwargs[key].flat
+                        for elt in range(kwargs[key].size):
+                            flat_iter[elt].dual[i] = 1
+                            i += 1
                 args = newargs
             else:
-                nvars = len(varpos)
+                #nvars = len(varpos)
+                nvars = 0
+                for i in varpos:
+                    if isinstance(args[i], np.ndarray):
+                        nvars += args[i].size
+                    else:
+                        nvars += 1
                 if kwargs:
                     raise Exception("Keyword arguments only supported for full gradient.")
                 newargs = [arg for arg in args]
                 # Replace the chosen vars in varpos with dual[i]=1
-                for i in range(nvars):
-                    if isinstance(args[varpos[i]], np.ndarray):
-                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
-                        newargs[varpos[i]] = numpytodual(args[varpos[i]])
+                i = 0
+                for k in varpos:
+                    if isinstance(args[k], np.ndarray):
+                        #numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars, seedvar=i))
+                        #newargs[k] = numpytodual(args[k])
+                        # Each element is its own variable
+                        numpytodual = np.vectorize(lambda x : Dual(x, nvars=nvars))
+                        newargs[k] = numpytodual(args[k])
+                        flat_iter = newargs[k].flat
+                        for elt in range(newargs[k].size):
+                            flat_iter[elt].dual[i] = 1
+                            i += 1
                     else:
-                        newargs[varpos[i]] = Dual(args[varpos[i]], nvars=nvars, seedvar=i)
+                        newargs[k] = Dual(args[k], nvars=nvars, seedvar=i)
+                        i += 1
                 args = newargs
             return func(*args, **kwargs)
         return wrapper
