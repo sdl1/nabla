@@ -49,6 +49,10 @@ def test_dual():
     ytohalf = y ** 0.5
     assert close(sqrty.real, ytohalf.real) and close(sqrty.dual[0], ytohalf.dual[0])
 
+    z = 2**y
+    zalt = Dual(2)**y
+    assert close(z.real, zalt.real) and close(z.dual[0], zalt.dual[0])
+
 def test_dual_multivar():
     x = Dual(2, [3, 1])
     y = Dual(4, [5, 2])

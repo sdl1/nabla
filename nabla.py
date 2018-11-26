@@ -36,7 +36,7 @@ def grad(*args):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if varpos==None:
+            if varpos is None:
                 # Full gradient case
                 # Count numerical arguments
                 nvars = len([a for a in args if isinstance(a, numbers.Number)])
@@ -134,41 +134,52 @@ class Dual:
         self.real = real
         if isinstance(dual, numbers.Number):
             dual = np.array([dual], dtype=np.float64)
-        if dual==None and nvars==None:
+        if dual is None and nvars is None:
             self.dual = np.array([0], dtype=np.float64)
             self.nvars = 1
-        elif nvars==None:
+        elif nvars is None:
             self.dual = np.array(dual, dtype=np.float64)
             self.nvars = len(dual)
-        elif dual==None:
+        elif dual is None:
             self.dual = np.array([0]*nvars, dtype=np.float64)
             self.nvars = nvars
         else:
             self.dual = np.array(dual, dtype=np.float64)
             self.nvars = nvars
-    @othertodual(0)
     def __add__(self, other):
-        ret = Dual(self. real + other.real, nvars=self.nvars)
-        for i in range(self.nvars):
-            ret.dual[i] = self.dual[i] + other.dual[i]
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        ret = Dual(self.real + otherreal, self.dual)
+        if otherdual is not None:
+            for i in range(self.nvars):
+                ret.dual[i] += otherdual[i]
         return ret
-    @othertodual(0)
     def __sub__(self, other):
-        ret = Dual(self. real - other.real, nvars=self.nvars)
-        for i in range(self.nvars):
-            ret.dual[i] = self.dual[i] - other.dual[i]
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        ret = Dual(self. real - otherreal, self.dual)
+        if otherdual is not None:
+            for i in range(self.nvars):
+                ret.dual[i] -= otherdual[i]
         return ret
-    @othertodual(0)
     def __mul__(self, other):
-        ret = Dual(self. real * other.real, nvars=self.nvars)
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        ret = Dual(self.real * otherreal, nvars=self.nvars)
         for i in range(self.nvars):
-            ret.dual[i] = self.real*other.dual[i] + self.dual[i]*other.real
+            ret.dual[i] = self.dual[i]*otherreal
+        if otherdual is not None:
+            for i in range(self.nvars):
+                ret.dual[i] += self.real*otherdual[i]
         return ret
-    @othertodual(0)
     def __truediv__(self, other):
-        ret = Dual(self. real / other.real, nvars=self.nvars)
-        for i in range(self.nvars):
-            ret.dual[i] = (self.dual[i]*other.real - self.real*other.dual[i])/(other.real*other.real)
+        otherreal = getattr(other, 'real', other)
+        otherdual = getattr(other, 'dual', None)
+        #ret.dual[i] = self.dual[i]/other.real - self.real*other.dual[i])/(other.real*other.real)
+        ret = Dual(self. real / otherreal, self.dual / otherreal)
+        if otherdual is not None:
+            for i in range(self.nvars):
+                ret.dual[i] -= self.real*otherdual[i]/(otherreal*otherreal)
         return ret
     # object.__floordiv__(self, other)
     # object.__mod__(self, other)
@@ -176,43 +187,40 @@ class Dual:
     def __pow__(self, other, *modulo):
         if modulo:
             return NotImplemented
+        if isinstance(other, int):
+            m = other
+            negative = (m<0)
+            m = abs(m)
+            ret = Dual(1, nvars=self.nvars)
+            for _ in range(m):
+                ret *= self
+            if negative:
+                ret = 1/ret
+            return ret
         else:
-            if isinstance(other, int):
-                m = other
-                negative = (m<0)
-                m = abs(m)
-                ret = Dual(1, nvars=self.nvars)
-                for _ in range(m):
-                    ret *= self
-                if negative:
-                    ret = 1/ret
-                return ret
-            else:
-                other = Dual(real=other, nvars=self.nvars)
-                return exp(other*log(self))
+            return exp(other*log(self))
     # object.__lshift__(self, other)
     # object.__rshift__(self, other)
     # object.__and__(self, other)
     # object.__xor__(self, other)
     # object.__or__(self, other)
 
-    @othertodual(0)
     def __radd__(self, other):
-        return other.__add__(self)
-    @othertodual(0)
+        return self.__add__(other)
     def __rsub__(self, other):
-        return other.__sub__(self)
-    @othertodual(0)
+        return -self.__sub__(other)
     def __rmul__(self, other):
-        return other.__mul__(self)
-    @othertodual(0)
+        return self.__mul__(other)
     def __rtruediv__(self, other):
-        return other.__truediv__(self)
+        return Dual(1,nvars=self.nvars)/self.__truediv__(other)
     # object.__rfloordiv__(self, other)
     # object.__rmod__(self, other)
     # object.__rdivmod__(self, other)
     def __rpow__(self, other, *modulo):
-        return other.__pow__(self, modulo)
+        if modulo:
+            return NotImplemented
+        x = Dual(other, nvars=self.nvars)
+        return x.__pow__(self)
     # object.__rlshift__(self, other)
     # object.__rrshift__(self, other)
     # object.__rand__(self, other)
@@ -232,7 +240,8 @@ class Dual:
     # object.__ixor__(self, other)
     # object.__ior__(self, other)
 
-    # object.__neg__(self)¶
+    def __neg__(self):
+        return Dual(-self.real, -self.dual)
     # object.__pos__(self)
     # object.__abs__(self)
     # object.__invert__(self)
@@ -263,7 +272,7 @@ def minimise(f, x0, alpha = 1e-1, maxits = 1000, tolerance=1e-6, variables=None)
     converged = False
     for it in range(maxits):
         gradient = fgrad(*x0).dual
-        if variables==None:
+        if variables is None:
             step = alpha*gradient
         else:
             # Only step in specified variables
