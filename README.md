@@ -10,7 +10,7 @@ from nabla import grad
 def f(x):
     return 3*x*x
 
-print(grad()(f)(5))
+print(grad(f)(5))
 ```
 
     Dual(75,  [30.])
@@ -28,7 +28,7 @@ x, y, z, param = 1, 2, 3, "this is a non-numeric parameter"
 print(f(x, y, param, z))
 # Get the gradient w.r.t. x,y,z
 # The non-numeric parameter is automatically ignored
-print(grad()(f)(x, y, param, z))
+print(grad(f)(x, y, param, z))
 ```
 
     85
@@ -108,7 +108,7 @@ def analytical_derivative(x):
     return A - B
 
 x = 1
-dfdx_nabla = grad()(f)(x).dual
+dfdx_nabla = grad(f)(x).dual
 dfdx_analytic = analytical_derivative(x)
 
 eps = np.logspace(-15, -3)
@@ -130,7 +130,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7ff7e5dab860>
+    <matplotlib.legend.Legend at 0x7f30e4e5c668>
 
 
 
@@ -142,10 +142,10 @@ Compare time taken:
 
 
 ```python
-%timeit -n100 grad()(f)(x)
+%timeit -n100 grad(f)(x)
 %timeit -n100 (f(x+1e-8) - f(x))/1e-8
 ```
 
-    197 µs ± 14.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-    2.91 µs ± 28.3 ns per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    222 µs ± 72.7 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    2.98 µs ± 185 ns per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
