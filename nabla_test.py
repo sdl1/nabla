@@ -3,7 +3,7 @@
 import numpy as np
 
 import nabla
-from nabla import grad, Dual
+from nabla import grad, Dual, minimise
 
 def close(x, y, eps=1e-12):
     return abs(x-y)<eps
@@ -298,6 +298,23 @@ def test_grad_multimulti():
         assert close(fx[i], fgrad[i].dual[0], 1e-5)
         assert close(fy[i], fgrad[i].dual[1], 1e-5)
         assert close(fz[i], fgrad[i].dual[2], 1e-5)
+
+def test_minimise():
+    def f(x, y, z):
+        return np.sin(x+1) + 2*np.cos(y-1) + (z-1)**2
+
+    x0, fval, gradient = minimise(f, [0, 0, 0])
+    assert close(x0[0], -2.57078753, 1e-5) and close(x0[1], -2.14159265, 1e-5) and close(x0[2], 1.0, 1e-5)
+    assert close(fval, -3.0, 1e-5)
+    assert close(gradient[0], 0.0, 1e-5)
+    assert close(gradient[1], 0.0, 1e-5)
+    assert close(gradient[2], 0.0, 1e-5)
+
+    x0, fval, gradient = minimise(f, [0, 0, 0], variables=[0,1])
+    assert close(x0[0], -2.57078753, 1e-5) and close(x0[1], -2.14159265, 1e-5) and close(x0[2], 0.0, 1e-5)
+    assert close(fval, -2.0, 1e-5)
+    assert close(gradient[0], 0.0, 1e-5)
+    assert close(gradient[1], 0.0, 1e-5)
 
 
 
