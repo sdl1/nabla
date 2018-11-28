@@ -3,6 +3,8 @@
 
 Automatic, machine-precision forward differentiation in python using dual numbers.
 
+[Example use for logistic regression](examples/mnist/logistic.ipynb)
+
 
 ```python
 from nabla import grad
@@ -16,7 +18,7 @@ print(grad(f)(5))
     Dual(75,  [30.])
 
 
-Support for multiple variables:
+## Support for multiple variables
 
 
 ```python
@@ -35,7 +37,7 @@ print(grad(f)(x, y, param, z))
     Dual(85,  [  4.   2. 108.])
 
 
-Specify variables explicitly by position:
+## Specify variables explicitly by position
 
 
 ```python
@@ -46,7 +48,7 @@ print(grad([1,0])(f)(x, y, param, z))
     Dual(85,  [2. 4.])
 
 
-Use decorators; interop with numpy:
+## Use decorators; interop with numpy
 
 
 ```python
@@ -57,9 +59,15 @@ def f(x, y):
     return sin(x)*cos(y)
 
 print(f(1,2))
+
+# nabla can automatically differentiate w.r.t. a combination of numpy array entries and other function arguments: 
+print(f(np.array([1,2,3]), 2))
 ```
 
     Dual(-0.35017548837401463,  [-0.2248451 -0.7651474])
+    [Dual(-0.35017548837401463,  [-0.2248451 -0.        -0.        -0.7651474])
+     Dual(-0.37840124765396416,  [ 0.          0.17317819  0.         -0.82682181])
+     Dual(-0.05872664492762098,  [ 0.          0.          0.41198225 -0.12832006])]
 
 
 ## Gradient descent without any extra code
