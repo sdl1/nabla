@@ -82,11 +82,11 @@ print("Minimum found at x0 = {}".format(x0))
 print("Function, gradient at minimum = {}, {}\n".format(fval, gradient))
 ```
 
-    Minimum found at x0 = [-2.57078753 -2.14159265  1.        ]
-    Function, gradient at minimum = -2.9999999999612683, [ 8.80130830e-06  2.20381559e-12 -5.04263298e-13]
+    Minimum found at x0 = [-2.57079546 -2.14159265  1.        ]
+    Function, gradient at minimum = -2.9999999999996243, [ 8.66727231e-07  1.62321409e-14 -3.77475828e-15]
     
-    Minimum found at x0 = [-2.57078753 -2.14159265  0.        ]
-    Function, gradient at minimum = -1.9999999999612683, [8.80130830e-06 2.20381559e-12]
+    Minimum found at x0 = [-2.57079546 -2.14159265  0.        ]
+    Function, gradient at minimum = -1.9999999999996243, [8.66727231e-07 1.62321409e-14]
     
 
 
@@ -129,7 +129,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f6978a9f630>
+    <matplotlib.legend.Legend at 0x7fce4983bfd0>
 
 
 
@@ -145,6 +145,6 @@ Compare time taken:
 %timeit -n10000 (f(x+1e-8) - f(x))/1e-8
 ```
 
-    116 µs ± 6.09 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
-    7.83 µs ± 141 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+    124 µs ± 6.93 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+    8.27 µs ± 366 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
 
