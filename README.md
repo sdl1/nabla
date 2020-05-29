@@ -1,10 +1,9 @@
 
 # Nabla
 
+_Note: this is an unmaintained personal project, use at your own risk._
+
 Automatic, machine-precision forward differentiation in python using dual numbers.
-
-[Example use for logistic regression](examples/mnist/logistic.ipynb)
-
 
 ```python
 from nabla import grad
@@ -17,6 +16,7 @@ print(grad(f)(5))
 
     Dual(75,  [30.])
 
+[Example use for logistic regression](examples/mnist/logistic.ipynb)
 
 ## Support for multiple variables
 
